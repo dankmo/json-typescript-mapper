@@ -1,5 +1,16 @@
 import 'reflect-metadata';
 import {isTargetType, isPrimitiveOrPrimitiveClass, isArrayOrArrayClass} from './libs/utils';
+import {IDecoratorMetaData} from './';
+
+/**
+ * provide interface to indicate the object is allowed to be traversed
+ *
+ * @interface
+ */
+export interface IGenericObject {
+    [key: string]: any;
+}
+
 
 /**
  * Decorator variable name
@@ -8,6 +19,11 @@ import {isTargetType, isPrimitiveOrPrimitiveClass, isArrayOrArrayClass} from './
  */
 const JSON_META_DATA_KEY = 'JsonProperty';
 
+/**
+ * When custom mapping of a property is required.
+ *
+ * @interface
+ */
 export interface ICustomConverter {
     fromJson(data: any): any;
     toJson(data: any): any;
@@ -18,6 +34,8 @@ export interface ICustomConverter {
  * DecoratorConstraint
  *
  * @interface
+ * @property {ICustomConverter} customConverter, will be used for mapping the property, if specified
+ * @property {boolean} excludeToJson, will exclude the property for serialization, if true
  */
 export interface IDecoratorMetaData<T> {
     name?: string,
@@ -47,10 +65,10 @@ class DecoratorMetaData<T> {
  * @return {(target:Object, targetKey:string | symbol)=> void} decorator function
  */
 export function JsonProperty<T>(metadata?: IDecoratorMetaData<T>|string): (target: Object, targetKey: string | symbol)=> void {
-    let decoratorMetaData;
+    let decoratorMetaData: IDecoratorMetaData<T>;
 
     if (isTargetType(metadata, 'string')) {
-        decoratorMetaData = new DecoratorMetaData(metadata as string);
+        decoratorMetaData = new DecoratorMetaData<T>(metadata as string);
     }
     else if (isTargetType(metadata, 'object')) {
         decoratorMetaData = metadata as IDecoratorMetaData<T>;
@@ -97,23 +115,23 @@ function getJsonProperty<T>(target: any, propertyKey: string): IDecoratorMetaDat
  * @return {IDecoratorMetaData<T>} check if any arguments is null or undefined
  */
 function hasAnyNullOrUndefined(...args: any[]) {
-    return args.some((arg: any)=>arg === null || arg === undefined);
+    return args.some((arg: any) => arg === null || arg === undefined);
 }
 
 
-function mapFromJson<T>(decoratorMetadata: IDecoratorMetaData<any>, instance: T, json: Object, key: any): any {
+function mapFromJson<T>(decoratorMetadata: IDecoratorMetaData<any>, instance: T, json: IGenericObject, key: any): any {
     /**
      * if decorator name is not found, use target property key as decorator name. It means mapping it directly
      */
     let decoratorName = decoratorMetadata.name || key;
-    let innerJson = json ? json[decoratorName] : undefined;
+    let innerJson: any = json ? json[decoratorName] : undefined;
     let clazz = getClazz(instance, key);
     if (isArrayOrArrayClass(clazz)) {
         let metadata = getJsonProperty(instance, key);
         if (metadata && metadata.clazz || isPrimitiveOrPrimitiveClass(clazz)) {
             if (innerJson && isArrayOrArrayClass(innerJson)) {
                 return innerJson.map(
-                    (item)=> deserialize(metadata.clazz, item)
+                    (item: any) => deserialize(metadata.clazz, item)
                 );
             }
             return;
@@ -138,7 +156,7 @@ function mapFromJson<T>(decoratorMetadata: IDecoratorMetaData<any>, instance: T,
  *
  * @return {T} return mapped object
  */
-export function deserialize<T>(Clazz: {new(): T}, json: Object): T {
+export function deserialize<T extends IGenericObject>(Clazz: {new(): T}, json: IGenericObject): T {
     /**
      * As it is a recursive function, ignore any arguments that are unset
      */
@@ -157,7 +175,7 @@ export function deserialize<T>(Clazz: {new(): T}, json: Object): T {
      */
     let instance = new Clazz();
 
-    Object.keys(instance).forEach((key: any) => {
+    Object.keys(instance).forEach((key: string) => {
         /**
          * get decoratorMetaData, structure: { name?:string, clazz?:{ new():T } }
          */
@@ -177,13 +195,20 @@ export function deserialize<T>(Clazz: {new(): T}, json: Object): T {
     return instance;
 }
 
+/**
+ * Serialize: Creates a ready-for-json-serialization object from the provided model instance.
+ * Only @JsonProperty decorated properties in the model instance are processed.
+ *
+ * @param instance an instance of a model class
+ * @returns {any} an object ready to be serialized to JSON
+ */
 export function serialize(instance: any): any {
 
     if (!isTargetType(instance, 'object') || isArrayOrArrayClass(instance)) {
         return instance;
     }
 
-    const obj = {};
+    const obj: any = {};
     Object.keys(instance).forEach(key => {
         const metadata = getJsonProperty(instance, key);
         obj[metadata && metadata.name ? metadata.name : key] = serializeProperty(metadata, instance[key]);
@@ -191,6 +216,13 @@ export function serialize(instance: any): any {
     return obj;
 }
 
+/**
+ * Prepare a single property to be serialized to JSON.
+ *
+ * @param metadata
+ * @param prop
+ * @returns {any}
+ */
 function serializeProperty(metadata: IDecoratorMetaData<any>, prop: any): any {
 
     if (!metadata || metadata.excludeToJson === true) {
@@ -206,7 +238,7 @@ function serializeProperty(metadata: IDecoratorMetaData<any>, prop: any): any {
     }
 
     if (isArrayOrArrayClass(prop)) {
-        return prop.map(propItem => serialize(propItem));
+        return prop.map((propItem: any) => serialize(propItem));
     }
 
     return serialize(prop);
