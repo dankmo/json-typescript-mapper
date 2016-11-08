@@ -39,7 +39,7 @@ export interface ICustomConverter {
  */
 export interface IDecoratorMetaData<T> {
     name?: string,
-    clazz?: {new(): T},
+    clazz?: {new(...args: any[]): T},
     customConverter?: ICustomConverter,
     excludeToJson?: boolean
 }
@@ -156,7 +156,7 @@ function mapFromJson<T>(decoratorMetadata: IDecoratorMetaData<any>, instance: T,
  *
  * @return {T} return mapped object
  */
-export function deserialize<T extends IGenericObject>(Clazz: {new(): T}, json: IGenericObject): T {
+export function deserialize<T extends IGenericObject>(Clazz: {new(...args: any[]): T}, json: IGenericObject): T {
     /**
      * As it is a recursive function, ignore any arguments that are unset
      */
