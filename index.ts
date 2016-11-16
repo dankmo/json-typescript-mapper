@@ -1,6 +1,8 @@
 import 'aurelia-polyfills';
 import {isTargetType, isPrimitiveOrPrimitiveClass, isArrayOrArrayClass} from './libs/utils';
 
+declare let Reflect: any;
+
 /**
  * provide interface to indicate the object is allowed to be traversed
  *
