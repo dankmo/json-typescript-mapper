@@ -7,6 +7,13 @@
     "emitDecoratorMetadata": true,
     "noImplicitAny": true
   },
+  "filesGlob": [
+    "index.ts",
+    "./spec/**/*.ts",
+    "!./node_modules/**/*.ts",
+    "typings-custom/*.ts",
+    "typings/**/*.ts"
+  ],
   "exclude": [
     "node_modules"
   ]

@@ -1,6 +1,5 @@
-import 'reflect-metadata';
+import 'aurelia-polyfills';
 import {isTargetType, isPrimitiveOrPrimitiveClass, isArrayOrArrayClass} from './libs/utils';
-import {IDecoratorMetaData} from './';
 
 /**
  * provide interface to indicate the object is allowed to be traversed
@@ -78,6 +77,7 @@ export function JsonProperty<T>(metadata?: IDecoratorMetaData<T>|string): (targe
     }
 
     return Reflect.metadata(JSON_META_DATA_KEY, decoratorMetaData);
+
 }
 
 
@@ -91,7 +91,8 @@ export function JsonProperty<T>(metadata?: IDecoratorMetaData<T>|string): (targe
  * @description Used for type checking, if it is not primitive type, loop inside recursively
  */
 function getClazz<T>(target: T, propertyKey: string): {new(): T} {
-    return Reflect.getMetadata('design:type', target, propertyKey)
+    const proto = Object.getPrototypeOf(target);
+    return Reflect.getOwnMetadata('design:type', proto, propertyKey)
 }
 
 
@@ -104,7 +105,8 @@ function getClazz<T>(target: T, propertyKey: string): {new(): T} {
  * @return {IDecoratorMetaData<T>} Obtain target property decorator meta data
  */
 function getJsonProperty<T>(target: any, propertyKey: string): IDecoratorMetaData<T> {
-    return Reflect.getMetadata(JSON_META_DATA_KEY, target, propertyKey);
+    const proto = Object.getPrototypeOf(target);
+    return Reflect.getOwnMetadata(JSON_META_DATA_KEY, proto, propertyKey);
 }
 
 /**

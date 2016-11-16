@@ -1,5 +1,5 @@
 "use strict";
-require('reflect-metadata');
+require('aurelia-polyfills');
 var utils_1 = require('./libs/utils');
 /**
  * Decorator variable name
@@ -53,7 +53,8 @@ exports.JsonProperty = JsonProperty;
  * @description Used for type checking, if it is not primitive type, loop inside recursively
  */
 function getClazz(target, propertyKey) {
-    return Reflect.getMetadata('design:type', target, propertyKey);
+    var proto = Object.getPrototypeOf(target);
+    return Reflect.getOwnMetadata('design:type', proto, propertyKey);
 }
 /**
  * getJsonProperty
@@ -64,7 +65,8 @@ function getClazz(target, propertyKey) {
  * @return {IDecoratorMetaData<T>} Obtain target property decorator meta data
  */
 function getJsonProperty(target, propertyKey) {
-    return Reflect.getMetadata(JSON_META_DATA_KEY, target, propertyKey);
+    var proto = Object.getPrototypeOf(target);
+    return Reflect.getOwnMetadata(JSON_META_DATA_KEY, proto, propertyKey);
 }
 /**
  * hasAnyNullOrUndefined
